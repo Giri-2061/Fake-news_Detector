@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![FNDS Logo](public/favicon.svg)
+
 
 **Detect misinformation in Nepali news using AI & NLP technology**
 
