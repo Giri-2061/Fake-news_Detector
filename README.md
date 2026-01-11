@@ -1,73 +1,190 @@
-# Welcome to your Lovable project
+# 🛡️ FNDS - Fake News Detection System
 
-## Project info
+<div align="center">
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![FNDS Logo](public/favicon.svg)
 
-## How can I edit this code?
+**Detect misinformation in Nepali news using AI & NLP technology**
 
-There are several ways of editing your application.
+[![Python](https://img.shields.io/badge/Python-3.13-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-**Use Lovable**
+</div>
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📖 Overview
 
-**Use your preferred IDE**
+FNDS (Fake News Detection System) is an AI-powered web application that helps users verify the authenticity of news articles. It uses machine learning (Logistic Regression with TF-IDF) trained on 44,000+ news articles to classify content as REAL or FAKE with **99.11% accuracy**.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### ✨ Key Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🔗 **URL Analysis** - Paste any news article URL for comprehensive analysis
+- 📷 **Image OCR** - Upload screenshots of news for text extraction and verification
+- 📰 **Live Nepal News** - Real-time feed from trusted Nepali news sources
+- 🏢 **Source Credibility** - Database of 47+ news sources with credibility scores
+- 🎯 **Hybrid Prediction** - Combines ML text analysis with source reputation
+- 🌐 **Nepal Focused** - Optimized for Nepali news sources
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🛠️ Tech Stack
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Frontend
+- **React 18** + **TypeScript** - Modern UI framework
+- **Vite** - Fast build tool and dev server
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - Beautiful UI components
+- **Lucide React** - Icon library
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Backend
+- **FastAPI** - High-performance Python API
+- **scikit-learn** - Machine learning (Logistic Regression, TF-IDF)
+- **NLTK** - Natural language processing
+- **Tesseract OCR** - Optical character recognition
+- **trafilatura** - Web article extraction
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm/bun
+- Python 3.10+
+- Tesseract OCR (for image analysis)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/nepali-news-verifier.git
+cd nepali-news-verifier
+
+# Install frontend dependencies
+npm install
+
+# Create Python virtual environment
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Linux/Mac
+
+# Install Python dependencies
+pip install fastapi uvicorn scikit-learn nltk joblib trafilatura httpx pytesseract pillow
+
+# Train the ML model (first time only)
+python train_model.py
+```
+
+### Running the Application
+
+```bash
+# Terminal 1: Start the backend API
+cd backend
+python -m uvicorn app:app --host 0.0.0.0 --port 8001
+
+# Terminal 2: Start the frontend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 📊 ML Model Performance
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Metric | Score |
+|--------|-------|
+| Accuracy | 99.11% |
+| Training Data | 44,898 articles |
+| Features | TF-IDF (5000 features, 1-2 ngrams) |
+| Algorithm | Logistic Regression |
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 🗂️ Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+nepali-news-verifier/
+├── src/                    # React frontend
+│   ├── components/         # UI components
+│   ├── pages/              # Page components
+│   ├── lib/                # API utilities
+│   └── hooks/              # Custom hooks
+├── backend/                # FastAPI backend
+│   ├── app.py              # Main API
+│   ├── source_credibility.py  # Source database
+│   └── url_extractor.py    # URL processing
+├── models/                 # Trained ML models
+│   ├── fake_news_classifier.pkl
+│   └── tfidf_vectorizer.pkl
+├── True.csv                # Training data (real news)
+├── Fake.csv                # Training data (fake news)
+└── train_model.py          # Model training script
+```
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🔌 API Endpoints
 
-## Can I connect a custom domain to my Lovable project?
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/predict-text` | POST | Analyze text for fake news |
+| `/predict-url` | POST | Analyze news article URL |
+| `/predict-image` | POST | OCR + analyze image |
+| `/predict-with-source` | POST | Hybrid prediction with source |
+| `/check-source/{domain}` | GET | Check source credibility |
+| `/news-feed` | GET | Fetch live Nepal news |
+| `/sources` | GET | List all known sources |
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📰 Supported News Sources
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**Nepal Sources:**
+- The Kathmandu Post, Himalayan Times, Nepali Times
+- Republica, Online Khabar, Setopati
+- Ratopati, eKantipur, Nagarik News
+- And 30+ more...
+
+**International Sources:**
+- Reuters, AP News, BBC, CNN
+- The Guardian, New York Times
+- Al Jazeera, and more...
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Training data from [Kaggle Fake News Dataset](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+- Icons from [Lucide](https://lucide.dev/)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for fighting misinformation in Nepal**
+
+</div>
