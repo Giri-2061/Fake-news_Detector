@@ -2,49 +2,94 @@ import { useState } from "react";
 import HeroSection from "@/components/HeroSection";
 import NewsInputSection from "@/components/NewsInputSection";
 import ResultSection from "@/components/ResultSection";
+import UrlResultSection from "@/components/UrlResultSection";
 import Footer from "@/components/Footer";
+import { predictText, predictUrl, type ComprehensiveResponse } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
-interface AnalysisResult {
+interface TextAnalysisResult {
   prediction: "real" | "fake";
   confidence: number;
 }
 
+type ResultType = "text" | "url" | null;
+
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [resultType, setResultType] = useState<ResultType>(null);
+  const [textResult, setTextResult] = useState<TextAnalysisResult | null>(null);
+  const [urlResult, setUrlResult] = useState<ComprehensiveResponse | null>(null);
+  const { toast } = useToast();
 
-  const handleAnalyze = async (text: string) => {
+  const handleAnalyzeText = async (text: string) => {
     setIsLoading(true);
-    setResult(null);
+    setTextResult(null);
+    setUrlResult(null);
+    setResultType(null);
 
-    // Simulate API call with mock response
-    // In production, replace this with actual API call to your ML backend
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await predictText(text);
+      
+      setTextResult({
+        prediction: response.prediction.toLowerCase() as "real" | "fake",
+        confidence: Math.round(response.confidence * 100),
+      });
+      setResultType("text");
+    } catch (error) {
+      console.error("Prediction error:", error);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Could not connect to the analysis server. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Mock prediction logic based on text length/patterns for demo
-    // Replace with actual API response
-    const mockConfidence = Math.floor(Math.random() * 25) + 75; // 75-99%
-    const mockPrediction: "real" | "fake" =
-      text.length % 2 === 0 ? "real" : "fake";
+  const handleAnalyzeUrl = async (url: string) => {
+    setIsLoading(true);
+    setTextResult(null);
+    setUrlResult(null);
+    setResultType(null);
 
-    setResult({
-      prediction: mockPrediction,
-      confidence: mockConfidence,
-    });
-
-    setIsLoading(false);
+    try {
+      const response = await predictUrl(url);
+      setUrlResult(response);
+      setResultType("url");
+    } catch (error) {
+      console.error("URL analysis error:", error);
+      toast({
+        variant: "destructive",
+        title: "URL Analysis Failed",
+        description: error instanceof Error ? error.message : "Could not analyze the URL. Please check if it's a valid news article.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {
-    setResult(null);
+    setTextResult(null);
+    setUrlResult(null);
+    setResultType(null);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <main className="flex-1">
         <HeroSection />
-        <NewsInputSection onAnalyze={handleAnalyze} isLoading={isLoading} />
-        <ResultSection result={result} onReset={handleReset} />
+        <NewsInputSection 
+          onAnalyzeText={handleAnalyzeText} 
+          onAnalyzeUrl={handleAnalyzeUrl}
+          isLoading={isLoading} 
+        />
+        {resultType === "text" && (
+          <ResultSection result={textResult} onReset={handleReset} />
+        )}
+        {resultType === "url" && (
+          <UrlResultSection result={urlResult} onReset={handleReset} />
+        )}
       </main>
       <Footer />
     </div>
