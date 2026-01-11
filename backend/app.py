@@ -15,6 +15,9 @@ import string
 from pathlib import Path
 from typing import Optional, List
 import io
+import httpx
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 # NLTK for stopwords
 import nltk
@@ -761,6 +764,149 @@ async def predict_image(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OCR/Prediction error: {str(e)}")
+
+
+# ============== Nepal News Feed ==============
+
+class NewsItem(BaseModel):
+    title: str
+    link: str
+    published: Optional[str] = None
+    source: str
+    image: Optional[str] = None
+    description: Optional[str] = None
+
+class NewsFeedResponse(BaseModel):
+    success: bool
+    articles: List[NewsItem]
+    source_count: int
+
+# Nepal news RSS feeds
+NEPAL_RSS_FEEDS = [
+    {"url": "https://thehimalayantimes.com/feed/", "name": "The Himalayan Times"},
+    {"url": "https://kathmandupost.com/rss/latest", "name": "The Kathmandu Post"},
+    {"url": "https://www.onlinekhabar.com/feed", "name": "Online Khabar"},
+]
+
+async def fetch_rss_feed(url: str, source_name: str, limit: int = 5) -> List[NewsItem]:
+    """Fetch and parse RSS feed from a news source."""
+    articles = []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, follow_redirects=True)
+            if response.status_code != 200:
+                return articles
+            
+            # Parse XML
+            root = ET.fromstring(response.content)
+            
+            # Find all items (RSS 2.0 format)
+            items = root.findall('.//item')[:limit]
+            
+            # Define namespace for media elements
+            namespaces = {
+                'media': 'http://search.yahoo.com/mrss/',
+                'content': 'http://purl.org/rss/1.0/modules/content/'
+            }
+            
+            for item in items:
+                title_elem = item.find('title')
+                link_elem = item.find('link')
+                pub_date_elem = item.find('pubDate')
+                desc_elem = item.find('description')
+                
+                if title_elem is not None and link_elem is not None:
+                    # Parse and format the date
+                    pub_date = None
+                    if pub_date_elem is not None and pub_date_elem.text:
+                        try:
+                            # Try parsing common RSS date formats
+                            date_str = pub_date_elem.text
+                            for fmt in ["%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z"]:
+                                try:
+                                    dt = datetime.strptime(date_str.strip(), fmt)
+                                    pub_date = dt.strftime("%b %d, %Y")
+                                    break
+                                except ValueError:
+                                    continue
+                            if not pub_date:
+                                pub_date = date_str[:16]  # Fallback: first 16 chars
+                        except:
+                            pass
+                    
+                    # Try to find image URL from various RSS formats
+                    image_url = None
+                    
+                    # Try direct image element (OnlineKhabar uses this)
+                    image_elem = item.find('image')
+                    if image_elem is not None and image_elem.text:
+                        image_url = image_elem.text.strip()
+                    
+                    # Try media:content
+                    if not image_url:
+                        media_content = item.find('media:content', namespaces)
+                        if media_content is not None:
+                            image_url = media_content.get('url')
+                    
+                    # Try media:thumbnail
+                    if not image_url:
+                        media_thumb = item.find('media:thumbnail', namespaces)
+                        if media_thumb is not None:
+                            image_url = media_thumb.get('url')
+                    
+                    # Try enclosure
+                    if not image_url:
+                        enclosure = item.find('enclosure')
+                        if enclosure is not None and enclosure.get('type', '').startswith('image'):
+                            image_url = enclosure.get('url')
+                    
+                    # Try to extract from description HTML
+                    if not image_url and desc_elem is not None and desc_elem.text:
+                        img_match = re.search(r'<img[^>]+src=["\']([^"\'>]+)["\']', desc_elem.text)
+                        if img_match:
+                            image_url = img_match.group(1)
+                    
+                    # Get description text (strip HTML)
+                    description = None
+                    if desc_elem is not None and desc_elem.text:
+                        # Remove HTML tags
+                        desc_text = re.sub(r'<[^>]+>', '', desc_elem.text)
+                        description = desc_text.strip()[:150] + '...' if len(desc_text.strip()) > 150 else desc_text.strip()
+                    
+                    articles.append(NewsItem(
+                        title=title_elem.text.strip() if title_elem.text else "No title",
+                        link=link_elem.text.strip() if link_elem.text else "",
+                        published=pub_date,
+                        source=source_name,
+                        image=image_url,
+                        description=description
+                    ))
+    except Exception as e:
+        print(f"Error fetching {source_name}: {e}")
+    
+    return articles
+
+@app.get("/news-feed", response_model=NewsFeedResponse)
+async def get_nepal_news(limit: int = 5):
+    """
+    Fetch latest news from trusted Nepali news sources.
+    Returns a combined feed from multiple sources.
+    """
+    all_articles = []
+    successful_sources = 0
+    
+    for feed in NEPAL_RSS_FEEDS:
+        articles = await fetch_rss_feed(feed["url"], feed["name"], limit=limit)
+        if articles:
+            all_articles.extend(articles)
+            successful_sources += 1
+    
+    # Sort by source to mix them up, or you could sort by date if available
+    return NewsFeedResponse(
+        success=len(all_articles) > 0,
+        articles=all_articles[:limit * 3],  # Return up to 15 articles total
+        source_count=successful_sources
+    )
 
 
 # ============== Run Server ==============

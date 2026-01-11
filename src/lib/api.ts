@@ -3,7 +3,7 @@
  * Handles communication with the FastAPI backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
 export interface PredictionResponse {
   prediction: "REAL" | "FAKE";
@@ -197,6 +197,36 @@ export async function predictImage(file: File): Promise<PredictionResponse> {
   if (!response.ok) {
     const error: ApiError = await response.json();
     throw new Error(error.detail || "Image prediction failed");
+  }
+
+  return response.json();
+}
+
+// ============== News Feed ==============
+
+export interface NewsItem {
+  title: string;
+  link: string;
+  published: string | null;
+  source: string;
+  image: string | null;
+  description: string | null;
+}
+
+export interface NewsFeedResponse {
+  success: boolean;
+  articles: NewsItem[];
+  source_count: number;
+}
+
+/**
+ * Fetch latest news from trusted Nepali news sources
+ */
+export async function fetchNepalNews(limit: number = 5): Promise<NewsFeedResponse> {
+  const response = await fetch(`${API_BASE_URL}/news-feed?limit=${limit}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch news feed");
   }
 
   return response.json();

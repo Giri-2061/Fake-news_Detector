@@ -110,24 +110,22 @@ const NewsInputSection = ({ onAnalyzeImage, onAnalyzeUrl, isLoading }: NewsInput
   };
 
   return (
-    <section className="py-12 md:py-16">
-      <div className="container max-w-3xl mx-auto px-4">
-        <div className="bg-card rounded-2xl shadow-card p-6 md:p-8 card-gradient">
-          {/* Mode Toggle */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => handleModeChange("url")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-                mode === "url"
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-              disabled={isLoading}
-            >
-              <Link className="w-4 h-4" />
-              Paste URL
-            </button>
-            <button
+    <div className="bg-card rounded-2xl shadow-card p-6 md:p-8 card-gradient">
+      {/* Mode Toggle */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => handleModeChange("url")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
+            mode === "url"
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          }`}
+          disabled={isLoading}
+        >
+          <Link className="w-4 h-4" />
+          Paste URL
+        </button>
+        <button
               onClick={() => handleModeChange("image")}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
                 mode === "image"
@@ -281,8 +279,6 @@ const NewsInputSection = ({ onAnalyzeImage, onAnalyzeUrl, isLoading }: NewsInput
             )}
           </Button>
         </div>
-      </div>
-    </section>
   );
 };
 
