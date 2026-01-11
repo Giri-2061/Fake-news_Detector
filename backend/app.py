@@ -105,6 +105,22 @@ class TextInput(BaseModel):
         }
 
 
+class TextWithSourceInput(BaseModel):
+    """Request model for text prediction with source information."""
+    text: str = Field(..., min_length=10, description="News article text to analyze")
+    source: Optional[str] = Field(None, description="Source name or domain (e.g., 'The Kathmandu Post' or 'kathmandupost.com')")
+    text_weight: Optional[float] = Field(0.7, ge=0.0, le=1.0, description="Weight for text-based prediction (0-1)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "text": "The president announced a new policy today during a press conference.",
+                "source": "The Kathmandu Post",
+                "text_weight": 0.7
+            }
+        }
+
+
 class PredictionResponse(BaseModel):
     """Response model for predictions."""
     prediction: str = Field(..., description="REAL or FAKE")
@@ -123,6 +139,35 @@ class PredictionResponse(BaseModel):
                 "text_length": 150
             }
         }
+
+
+class HybridPredictionResponse(BaseModel):
+    """Response model for hybrid prediction with source credibility."""
+    # Final combined prediction
+    prediction: str = Field(..., description="REAL or FAKE")
+    confidence: float = Field(..., description="Final adjusted confidence (0-1)")
+    fake_probability: float = Field(..., description="Final adjusted fake probability")
+    real_probability: float = Field(..., description="Final adjusted real probability")
+    
+    # Text-based prediction details
+    text_prediction: str = Field(..., description="Text-only prediction")
+    text_confidence: float = Field(..., description="Text-only confidence")
+    text_fake_probability: float = Field(..., description="Text-based fake probability")
+    text_real_probability: float = Field(..., description="Text-based real probability")
+    
+    # Source information
+    source_name: str = Field(..., description="Identified source name")
+    source_score: float = Field(..., description="Source credibility score (0-1)")
+    source_known: bool = Field(..., description="Whether source is in our database")
+    source_type: str = Field(..., description="Type of source")
+    
+    # Weights used
+    text_weight: float = Field(..., description="Weight given to text prediction")
+    source_weight: float = Field(..., description="Weight given to source credibility")
+    
+    # Additional info
+    text_length: int = Field(..., description="Length of processed text")
+    adjustment_applied: str = Field(..., description="Description of how source affected prediction")
 
 
 class HealthResponse(BaseModel):
@@ -233,7 +278,7 @@ def clean_text(text: str) -> str:
 
 def predict_news(text: str) -> dict:
     """
-    Predict whether news is real or fake.
+    Predict whether news is real or fake (text-only).
     
     Args:
         text: News article text
@@ -266,6 +311,138 @@ def predict_news(text: str) -> dict:
     }
 
 
+def predict_news_with_source(
+    text: str, 
+    source: Optional[str] = None,
+    text_weight: float = 0.7
+) -> dict:
+    """
+    Predict whether news is real or fake, incorporating source credibility.
+    
+    The final probability is calculated as:
+    - final_real_prob = (text_weight * text_real_prob) + (source_weight * source_score)
+    - final_fake_prob = 1 - final_real_prob
+    
+    Args:
+        text: News article text
+        source: Source name or domain (optional)
+        text_weight: Weight for text-based prediction (0-1), source_weight = 1 - text_weight
+    
+    Returns:
+        Dictionary with combined prediction results
+    """
+    # Get text-based prediction
+    text_result = predict_news(text)
+    
+    # Get source credibility
+    source_weight = 1.0 - text_weight
+    
+    if source:
+        # Try to find source in database by name or domain
+        source_info = get_source_info(source.lower().replace("www.", ""))
+        
+        # If not found by domain, try to match by name
+        if not source_info["known"]:
+            # Search by name in ALL_SOURCES
+            for domain, info in ALL_SOURCES.items():
+                if source.lower() in info.get("name", "").lower() or info.get("name", "").lower() in source.lower():
+                    source_info = {"known": True, **info}
+                    break
+    else:
+        # Unknown source defaults to neutral
+        source_info = {
+            "known": False,
+            "score": 0.5,
+            "name": "Unknown Source",
+            "type": "unknown"
+        }
+    
+    source_score = source_info["score"]
+    source_name = source_info.get("name", source or "Unknown Source")
+    source_known = source_info["known"]
+    source_type = source_info.get("type", "unknown")
+    
+    # Text-based probabilities
+    text_fake_prob = text_result["fake_probability"]
+    text_real_prob = text_result["real_probability"]
+    
+    # Calculate adjusted probabilities
+    # Higher source_score means more credible, so it increases real probability
+    # Formula: 
+    # - For a credible source (score=0.85), we want to boost real probability
+    # - For an unreliable source (score=0.1), we want to boost fake probability
+    
+    # Convert source_score to source_real_prob (credible source = high real prob)
+    source_real_prob = source_score
+    source_fake_prob = 1.0 - source_score
+    
+    # Weighted combination
+    final_real_prob = (text_weight * text_real_prob) + (source_weight * source_real_prob)
+    final_fake_prob = (text_weight * text_fake_prob) + (source_weight * source_fake_prob)
+    
+    # Normalize to ensure they sum to 1
+    total = final_real_prob + final_fake_prob
+    final_real_prob = final_real_prob / total
+    final_fake_prob = final_fake_prob / total
+    
+    # Determine final prediction
+    if final_real_prob >= final_fake_prob:
+        final_prediction = "REAL"
+        final_confidence = final_real_prob
+    else:
+        final_prediction = "FAKE"
+        final_confidence = final_fake_prob
+    
+    # Generate adjustment description
+    if source_known:
+        if source_score >= 0.8:
+            if text_result["prediction"] == "FAKE" and final_prediction == "REAL":
+                adjustment = f"Source credibility ({source_score:.0%}) overrode text prediction, changing FAKE to REAL"
+            elif text_result["prediction"] == "FAKE":
+                adjustment = f"Source credibility ({source_score:.0%}) reduced fake confidence"
+            else:
+                adjustment = f"Credible source ({source_score:.0%}) reinforced real prediction"
+        elif source_score <= 0.3:
+            if text_result["prediction"] == "REAL" and final_prediction == "FAKE":
+                adjustment = f"Low source credibility ({source_score:.0%}) overrode text prediction, changing REAL to FAKE"
+            elif text_result["prediction"] == "REAL":
+                adjustment = f"Low source credibility ({source_score:.0%}) reduced real confidence"
+            else:
+                adjustment = f"Unreliable source ({source_score:.0%}) reinforced fake prediction"
+        else:
+            adjustment = f"Moderate source credibility ({source_score:.0%}) applied"
+    else:
+        adjustment = "Unknown source - neutral credibility (0.5) applied"
+    
+    return {
+        # Final combined prediction
+        "prediction": final_prediction,
+        "confidence": round(final_confidence, 4),
+        "fake_probability": round(final_fake_prob, 4),
+        "real_probability": round(final_real_prob, 4),
+        
+        # Text-based prediction details
+        "text_prediction": text_result["prediction"],
+        "text_confidence": round(text_result["confidence"], 4),
+        "text_fake_probability": round(text_fake_prob, 4),
+        "text_real_probability": round(text_real_prob, 4),
+        
+        # Source information
+        "source_name": source_name,
+        "source_score": source_score,
+        "source_known": source_known,
+        "source_type": source_type,
+        
+        # Weights used
+        "text_weight": text_weight,
+        "source_weight": source_weight,
+        
+        # Additional info
+        "text_length": text_result["text_length"],
+        "adjustment_applied": adjustment
+    }
+
+
 # ============== API Endpoints ==============
 
 @app.get("/", tags=["Root"])
@@ -273,10 +450,11 @@ async def root():
     """Root endpoint with API info."""
     return {
         "message": "Fake News Detection API",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "docs": "/docs",
         "endpoints": {
             "predict_text": "/predict-text",
+            "predict_with_source": "/predict-with-source",
             "predict_url": "/predict-url",
             "predict_image": "/predict-image",
             "check_source": "/check-source",
@@ -299,7 +477,7 @@ async def health_check():
 @app.post("/predict-text", response_model=PredictionResponse, tags=["Prediction"])
 async def predict_text_endpoint(input_data: TextInput):
     """
-    Predict whether a news article is real or fake.
+    Predict whether a news article is real or fake (text-only, no source adjustment).
     
     - **text**: The news article text to analyze (minimum 10 characters)
     
@@ -311,6 +489,49 @@ async def predict_text_endpoint(input_data: TextInput):
     try:
         result = predict_news(input_data.text)
         return PredictionResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+
+@app.post("/predict-with-source", response_model=HybridPredictionResponse, tags=["Prediction"])
+async def predict_with_source_endpoint(input_data: TextWithSourceInput):
+    """
+    Predict whether a news article is real or fake, incorporating source credibility.
+    
+    This endpoint combines:
+    1. **Text-based ML prediction** (using the trained model)
+    2. **Source credibility score** (from our database of known sources)
+    
+    The final probability is calculated as a weighted combination:
+    - `final_real_prob = (text_weight × text_real_prob) + (source_weight × source_score)`
+    
+    **Parameters:**
+    - **text**: The news article text to analyze (minimum 10 characters)
+    - **source**: Source name or domain (e.g., "The Kathmandu Post", "kathmandupost.com")
+    - **text_weight**: Weight for text-based prediction (0-1), default 0.7 (70% text, 30% source)
+    
+    **Example:**
+    - Text predicts 66% fake probability
+    - Source is "The Kathmandu Post" (credibility score: 0.85)
+    - With default weights (70/30):
+      - Final fake prob = 0.7 × 0.66 + 0.3 × 0.15 = 0.507
+      - Final real prob = 0.7 × 0.34 + 0.3 × 0.85 = 0.493
+    - The credible source reduces the fake probability!
+    
+    Returns detailed prediction with both text-based and source-adjusted scores.
+    """
+    if model is None or vectorizer is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    try:
+        result = predict_news_with_source(
+            text=input_data.text,
+            source=input_data.source,
+            text_weight=input_data.text_weight
+        )
+        return HybridPredictionResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -356,19 +577,25 @@ async def predict_url(input_data: UrlInput):
         # 3. Analyze content for fake news indicators
         content_analysis = analyze_content_credibility(article["text"])
         
-        # 4. ML prediction
-        ml_result = predict_news(article["text"])
+        # 4. Hybrid prediction (text + source)
+        # Use 70% text, 30% source weight for URL analysis
+        hybrid_result = predict_news_with_source(
+            text=article["text"],
+            source=domain,
+            text_weight=0.7
+        )
         
         # 5. Calculate overall credibility score
+        # Now uses the hybrid prediction which already incorporates source
         source_score = source_info["score"]
-        ml_score = ml_result["real_probability"]
+        ml_score = hybrid_result["real_probability"]  # Use adjusted probability
         content_penalty = content_analysis["credibility_penalty"]
         
-        # Weighted combination
+        # Weighted combination for overall credibility
+        # Since hybrid already incorporates source, adjust weights
         overall_credibility = (
-            source_score * 0.3 +  # 30% source reputation
-            ml_score * 0.5 +      # 50% ML prediction
-            (1 - content_penalty) * 0.2  # 20% content quality
+            ml_score * 0.7 +      # 70% hybrid ML+source prediction
+            (1 - content_penalty) * 0.3  # 30% content quality
         )
         overall_credibility = round(overall_credibility, 3)
         
@@ -405,8 +632,8 @@ async def predict_url(input_data: UrlInput):
             author=article.get("author"),
             date=article.get("date"),
             text_preview=article["text"][:500] + "..." if len(article["text"]) > 500 else article["text"],
-            ml_prediction=ml_result["prediction"],
-            ml_confidence=round(ml_result["confidence"], 3),
+            ml_prediction=hybrid_result["prediction"],  # Use hybrid prediction
+            ml_confidence=round(hybrid_result["confidence"], 3),
             source=SourceCredibility(
                 domain=domain,
                 name=source_info.get("name", domain),

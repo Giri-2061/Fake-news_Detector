@@ -13,6 +13,34 @@ export interface PredictionResponse {
   text_length: number;
 }
 
+export interface HybridPredictionResponse {
+  // Final combined prediction
+  prediction: "REAL" | "FAKE";
+  confidence: number;
+  fake_probability: number;
+  real_probability: number;
+  
+  // Text-based prediction details
+  text_prediction: "REAL" | "FAKE";
+  text_confidence: number;
+  text_fake_probability: number;
+  text_real_probability: number;
+  
+  // Source information
+  source_name: string;
+  source_score: number;
+  source_known: boolean;
+  source_type: string;
+  
+  // Weights used
+  text_weight: number;
+  source_weight: number;
+  
+  // Additional info
+  text_length: number;
+  adjustment_applied: string;
+}
+
 export interface SourceCredibility {
   domain: string;
   name: string;
@@ -69,7 +97,7 @@ export async function checkHealth(): Promise<HealthResponse> {
 }
 
 /**
- * Predict if news text is real or fake
+ * Predict if news text is real or fake (text-only, no source adjustment)
  */
 export async function predictText(text: string): Promise<PredictionResponse> {
   const response = await fetch(`${API_BASE_URL}/predict-text`, {
@@ -78,6 +106,38 @@ export async function predictText(text: string): Promise<PredictionResponse> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || "Prediction failed");
+  }
+
+  return response.json();
+}
+
+/**
+ * Predict if news text is real or fake with source credibility adjustment
+ * 
+ * @param text - News article text
+ * @param source - Source name or domain (optional)
+ * @param textWeight - Weight for text-based prediction (0-1), default 0.7
+ */
+export async function predictWithSource(
+  text: string, 
+  source?: string,
+  textWeight: number = 0.7
+): Promise<HybridPredictionResponse> {
+  const response = await fetch(`${API_BASE_URL}/predict-with-source`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ 
+      text, 
+      source: source || null,
+      text_weight: textWeight 
+    }),
   });
 
   if (!response.ok) {

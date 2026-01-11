@@ -4,43 +4,43 @@ import NewsInputSection from "@/components/NewsInputSection";
 import ResultSection from "@/components/ResultSection";
 import UrlResultSection from "@/components/UrlResultSection";
 import Footer from "@/components/Footer";
-import { predictText, predictUrl, type ComprehensiveResponse } from "@/lib/api";
+import { predictImage, predictUrl, type ComprehensiveResponse } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-interface TextAnalysisResult {
+interface ImageAnalysisResult {
   prediction: "real" | "fake";
   confidence: number;
 }
 
-type ResultType = "text" | "url" | null;
+type ResultType = "image" | "url" | null;
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [resultType, setResultType] = useState<ResultType>(null);
-  const [textResult, setTextResult] = useState<TextAnalysisResult | null>(null);
+  const [imageResult, setImageResult] = useState<ImageAnalysisResult | null>(null);
   const [urlResult, setUrlResult] = useState<ComprehensiveResponse | null>(null);
   const { toast } = useToast();
 
-  const handleAnalyzeText = async (text: string) => {
+  const handleAnalyzeImage = async (file: File) => {
     setIsLoading(true);
-    setTextResult(null);
+    setImageResult(null);
     setUrlResult(null);
     setResultType(null);
 
     try {
-      const response = await predictText(text);
+      const response = await predictImage(file);
       
-      setTextResult({
+      setImageResult({
         prediction: response.prediction.toLowerCase() as "real" | "fake",
         confidence: Math.round(response.confidence * 100),
       });
-      setResultType("text");
+      setResultType("image");
     } catch (error) {
-      console.error("Prediction error:", error);
+      console.error("Image analysis error:", error);
       toast({
         variant: "destructive",
-        title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "Could not connect to the analysis server. Please try again.",
+        title: "Image Analysis Failed",
+        description: error instanceof Error ? error.message : "Could not analyze the image. Please ensure OCR is available.",
       });
     } finally {
       setIsLoading(false);
@@ -49,7 +49,7 @@ const Index = () => {
 
   const handleAnalyzeUrl = async (url: string) => {
     setIsLoading(true);
-    setTextResult(null);
+    setImageResult(null);
     setUrlResult(null);
     setResultType(null);
 
@@ -70,7 +70,7 @@ const Index = () => {
   };
 
   const handleReset = () => {
-    setTextResult(null);
+    setImageResult(null);
     setUrlResult(null);
     setResultType(null);
   };
@@ -80,12 +80,12 @@ const Index = () => {
       <main className="flex-1">
         <HeroSection />
         <NewsInputSection 
-          onAnalyzeText={handleAnalyzeText} 
+          onAnalyzeImage={handleAnalyzeImage} 
           onAnalyzeUrl={handleAnalyzeUrl}
           isLoading={isLoading} 
         />
-        {resultType === "text" && (
-          <ResultSection result={textResult} onReset={handleReset} />
+        {resultType === "image" && (
+          <ResultSection result={imageResult} onReset={handleReset} />
         )}
         {resultType === "url" && (
           <UrlResultSection result={urlResult} onReset={handleReset} />
