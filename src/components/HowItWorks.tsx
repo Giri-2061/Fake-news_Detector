@@ -1,47 +1,54 @@
-import { Link2, Image, Search, CheckCircle } from "lucide-react";
+import { Link2, Image, Cpu, CheckCircle } from "lucide-react";
 
 const HowItWorks = () => {
   const steps = [
     {
       icon: Link2,
-      title: "Paste a URL",
-      description: "Enter a news article URL to analyze the source and content",
+      step: "01",
+      title: "Input",
+      description: "Paste a news URL or upload a screenshot",
     },
     {
-      icon: Image,
-      title: "Or Upload Image",
-      description: "Upload a screenshot of news text for OCR-based analysis",
-    },
-    {
-      icon: Search,
-      title: "AI Analysis",
-      description: "Our ML model analyzes the text and checks source credibility",
+      icon: Cpu,
+      step: "02",
+      title: "Analyze",
+      description: "AI processes content and checks sources",
     },
     {
       icon: CheckCircle,
-      title: "Get Results",
-      description: "Receive a detailed verdict with confidence scores",
+      step: "03",
+      title: "Verify",
+      description: "Get results with confidence scores",
     },
   ];
 
   return (
-    <section className="py-12 bg-muted/30">
-      <div className="container max-w-4xl mx-auto px-4">
-        <h2 className="text-2xl font-semibold text-center text-foreground mb-8">
-          How It Works
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <section className="py-12 border-t border-border">
+      <div className="container max-w-3xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h2 className="text-lg font-semibold text-foreground">
+            How It Works
+          </h2>
+        </div>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
           {steps.map((step, index) => (
-            <div key={index} className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                <step.icon className="w-6 h-6 text-primary" />
+            <div key={index} className="flex items-center gap-4">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <step.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Step {step.step}
+                  </p>
+                  <h3 className="font-semibold text-foreground text-sm">
+                    {step.title}
+                  </h3>
+                </div>
               </div>
-              <h3 className="font-medium text-foreground mb-1 text-sm">
-                {step.title}
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {step.description}
-              </p>
+              {index < steps.length - 1 && (
+                <div className="hidden md:block w-8 h-px bg-border" />
+              )}
             </div>
           ))}
         </div>

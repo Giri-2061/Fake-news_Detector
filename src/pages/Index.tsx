@@ -82,18 +82,11 @@ const Index = () => {
       <main className="flex-1">
         <HeroSection />
         
-        {/* Main content area with sidebar */}
-        <div className="container max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* News feed on the left - bigger */}
-            <div className="lg:col-span-2 order-2 lg:order-1">
-              <div className="sticky top-4">
-                <NewsFeed />
-              </div>
-            </div>
-            
-            {/* Main analysis section */}
-            <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
+        {/* Main content area with sidebar layout */}
+        <div className="container max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Main analysis section - centered, takes remaining space */}
+            <div className="flex-1 lg:max-w-2xl lg:mx-auto space-y-6 order-1">
               <NewsInputSection 
                 onAnalyzeImage={handleAnalyzeImage} 
                 onAnalyzeUrl={handleAnalyzeUrl}
@@ -105,6 +98,13 @@ const Index = () => {
               {resultType === "url" && (
                 <UrlResultSection result={urlResult} onReset={handleReset} />
               )}
+            </div>
+            
+            {/* News feed on the right - fixed width, 1/4 of container */}
+            <div className="lg:w-80 xl:w-96 order-2 lg:order-2 flex-shrink-0">
+              <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)]">
+                <NewsFeed />
+              </div>
             </div>
           </div>
         </div>
