@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, AlertCircle, Loader2, Link, Image, Upload, X } from "lucide-react";
+import { Search, AlertCircle, Loader2, Link, Image, Upload, X, ArrowRight } from "lucide-react";
 
 type InputMode = "image" | "url";
 
@@ -62,12 +62,10 @@ const NewsInputSection = ({ onAnalyzeImage, onAnalyzeUrl, isLoading }: NewsInput
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith("image/")) {
         setError("Please upload an image file (PNG, JPG, JPEG).");
         return;
       }
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         setError("Image size must be less than 10MB.");
         return;
@@ -110,175 +108,167 @@ const NewsInputSection = ({ onAnalyzeImage, onAnalyzeUrl, isLoading }: NewsInput
   };
 
   return (
-    <div className="bg-card rounded-2xl shadow-card p-6 md:p-8 card-gradient">
-      {/* Mode Toggle */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => handleModeChange("url")}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-            mode === "url"
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          }`}
-          disabled={isLoading}
-        >
-          <Link className="w-4 h-4" />
-          Paste URL
-        </button>
-        <button
-              onClick={() => handleModeChange("image")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-                mode === "image"
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-              disabled={isLoading}
-            >
-              <Image className="w-4 h-4" />
-              Upload Image
-            </button>
-          </div>
+    <div className="bg-card rounded-2xl shadow-elevated border border-border/50 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-border bg-muted/30">
+        <h2 className="text-xl font-semibold text-foreground">Verify News</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Paste a URL or upload a screenshot to check authenticity
+        </p>
+      </div>
 
-          {mode === "url" ? (
-            <>
-              {/* URL Input Label */}
-              <label
-                htmlFor="url-input"
-                className="block text-lg font-semibold text-foreground mb-3"
-              >
-                Paste News Article URL
-              </label>
+      <div className="p-6">
+        {/* Mode Toggle */}
+        <div className="flex p-1 bg-muted rounded-xl mb-6">
+          <button
+            onClick={() => handleModeChange("url")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              mode === "url"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            disabled={isLoading}
+          >
+            <Link className="w-4 h-4" />
+            Paste URL
+          </button>
+          <button
+            onClick={() => handleModeChange("image")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              mode === "image"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            disabled={isLoading}
+          >
+            <Image className="w-4 h-4" />
+            Upload Image
+          </button>
+        </div>
 
-              {/* URL Input */}
+        {mode === "url" ? (
+          <>
+            {/* URL Input */}
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Link className="w-5 h-5" />
+              </div>
               <input
                 id="url-input"
                 type="url"
                 value={newsUrl}
                 onChange={handleUrlChange}
-                placeholder="https://kathmandupost.com/news-article..."
-                className="w-full p-4 rounded-xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 placeholder:text-muted-foreground/60"
+                placeholder="https://example.com/news-article"
+                className="w-full pl-12 pr-4 py-4 rounded-xl border border-input bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all placeholder:text-muted-foreground/50"
                 disabled={isLoading}
               />
+            </div>
 
-              {/* Helper text */}
-              <p className="text-sm text-muted-foreground mt-3">
-                We'll extract the article content and analyze it along with the source credibility.
-              </p>
+            {/* Supported sources */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Kathmandu Post", "Online Khabar", "Setopati", "Himalayan Times"].map((source) => (
+                <span
+                  key={source}
+                  className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-xs text-muted-foreground"
+                >
+                  {source}
+                </span>
+              ))}
+              <span className="inline-flex items-center px-2.5 py-1 text-xs text-muted-foreground">
+                + more
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Drag & Drop Zone */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                selectedImage
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:border-primary/30 hover:bg-muted/30"
+              } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
+            >
+              {selectedImage && imagePreview ? (
+                <div className="space-y-4">
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Selected news screenshot"
+                      className="max-h-40 rounded-lg shadow-md mx-auto"
+                    />
+                    <button
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow-md hover:bg-destructive/90 transition-colors"
+                      disabled={isLoading}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedImage.name}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-foreground font-medium">
+                      Drop your image here
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      or click to browse • PNG, JPG up to 10MB
+                    </p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleImageSelect}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
-              {/* Supported sources hint */}
-              <div className="mt-4 p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Supported sources:</strong> Kathmandu Post, Online Khabar, Setopati, 
-                  The Himalayan Times, Republica, BBC Nepali, and many more Nepali & international news sites.
-                </p>
-              </div>
+        {/* Error message */}
+        {error && (
+          <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+        )}
+
+        {/* Analyze button */}
+        <Button
+          variant="default"
+          size="lg"
+          onClick={handleAnalyze}
+          disabled={isLoading}
+          className="w-full mt-6 h-12 text-base font-medium bg-primary hover:bg-primary/90"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Analyzing...
             </>
           ) : (
             <>
-              {/* Image Upload Label */}
-              <label className="block text-lg font-semibold text-foreground mb-3">
-                Upload News Screenshot
-              </label>
-
-              {/* Drag & Drop Zone */}
-              <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                  selectedImage
-                    ? "border-primary bg-primary/5"
-                    : "border-input hover:border-primary/50 hover:bg-muted/30"
-                } ${isLoading ? "pointer-events-none opacity-60" : ""}`}
-              >
-                {selectedImage && imagePreview ? (
-                  <div className="space-y-4">
-                    <div className="relative inline-block">
-                      <img
-                        src={imagePreview}
-                        alt="Selected news screenshot"
-                        className="max-h-48 rounded-lg shadow-md mx-auto"
-                      />
-                      <button
-                        onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full shadow-md hover:bg-destructive/90 transition-colors"
-                        disabled={isLoading}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedImage.name} ({(selectedImage.size / 1024).toFixed(1)} KB)
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                      <Upload className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-foreground font-medium">
-                        Drag & drop your image here
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        or click to browse
-                      </p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg"
-                      onChange={handleImageSelect}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      disabled={isLoading}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Helper text */}
-              <p className="text-sm text-muted-foreground mt-3">
-                Upload a screenshot of a news article. We'll extract the text using OCR and analyze it.
-              </p>
-
-              {/* Format hint */}
-              <div className="mt-4 p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Supported formats:</strong> PNG, JPG, JPEG (max 10MB). 
-                  For best results, ensure the text in the image is clear and readable.
-                </p>
-              </div>
+              <Search className="w-5 h-5 mr-2" />
+              Verify Now
+              <ArrowRight className="w-4 h-4 ml-2" />
             </>
           )}
-
-          {/* Error message */}
-          {error && (
-            <div className="flex items-center gap-2 mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-              <span className="text-sm text-destructive">{error}</span>
-            </div>
-          )}
-
-          {/* Analyze button */}
-          <Button
-            variant="default"
-            size="lg"
-            onClick={handleAnalyze}
-            disabled={isLoading}
-            className="w-full mt-6 h-12 text-base"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                {mode === "image" ? "Extracting & Analyzing..." : "Fetching & Analyzing..."}
-              </>
-            ) : (
-              <>
-                <Search className="w-5 h-5 mr-2" />
-                {mode === "image" ? "Analyze Image" : "Verify URL"}
-              </>
-            )}
-          </Button>
-        </div>
+        </Button>
+      </div>
+    </div>
   );
 };
 
