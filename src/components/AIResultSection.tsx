@@ -36,15 +36,15 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
   const getVerdictDisplay = (verdict: string) => {
     switch (verdict) {
       case "REAL":
-        return { label: "Verified Real", color: "text-green-600", bg: "bg-green-50 border-green-200" };
+        return { label: "Verified Real", color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800" };
       case "FAKE":
-        return { label: "Likely Fake", color: "text-red-600", bg: "bg-red-50 border-red-200" };
+        return { label: "Likely Fake", color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800" };
       case "LIKELY_REAL":
-        return { label: "Likely Real (Model Uncertain)", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" };
+        return { label: "Likely Real (Model Uncertain)", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800" };
       case "LIKELY_FAKE":
-        return { label: "Likely Fake (Source Unreliable)", color: "text-orange-600", bg: "bg-orange-50 border-orange-200" };
+        return { label: "Likely Fake (Source Unreliable)", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-800" };
       default:
-        return { label: "Uncertain", color: "text-yellow-600", bg: "bg-yellow-50 border-yellow-200" };
+        return { label: "Uncertain", color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800" };
     }
   };
 
@@ -139,12 +139,12 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
 
           {/* Uncertainty Warning */}
           {isUncertain && (
-            <div className="mb-6 p-4 rounded-xl bg-amber-100 border border-amber-300">
+            <div className="mb-6 p-4 rounded-xl bg-amber-100 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800">
               <div className="flex items-start gap-3">
-                <HelpCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                <HelpCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-amber-800 mb-1">Uncertainty Detected</h4>
-                  <p className="text-sm text-amber-700">
+                  <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-1">Uncertainty Detected</h4>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
                     {result.final_verdict === "LIKELY_REAL" ? (
                       <>
                         The AI model has low confidence ({aiConfidence}%) but the source 
@@ -169,7 +169,7 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
           )}
 
           {/* AI Reasoning */}
-          <div className="mb-6 p-4 rounded-xl bg-white/50 border border-border/50">
+          <div className="mb-6 p-4 rounded-xl bg-card/50 border border-border">
             <div className="flex items-center gap-2 mb-3">
               <Brain className="w-5 h-5 text-primary" />
               <h4 className="font-semibold">AI Analysis</h4>
@@ -181,16 +181,16 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             
             {/* AI Prediction */}
-            <div className="p-4 rounded-xl bg-white/50 border border-border/50">
+            <div className="p-4 rounded-xl bg-card/50 border border-border">
               <div className="flex items-center gap-2 mb-3">
-                <Brain className="w-5 h-5 text-blue-600" />
+                <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <h4 className="font-semibold text-sm">AI Prediction</h4>
               </div>
               <div className="space-y-3">
                 <div className="text-center">
                   <span className={`text-2xl font-bold ${
-                    result.ai_prediction === "REAL" ? "text-green-600" : 
-                    result.ai_prediction === "FAKE" ? "text-red-600" : "text-yellow-600"
+                    result.ai_prediction === "REAL" ? "text-green-600 dark:text-green-400" : 
+                    result.ai_prediction === "FAKE" ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400"
                   }`}>
                     {result.ai_prediction}
                   </span>
@@ -198,12 +198,12 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Confidence</span>
-                    <span className={aiConfidence < 70 ? "text-amber-600 font-medium" : ""}>
+                    <span className={aiConfidence < 70 ? "text-amber-600 dark:text-amber-400 font-medium" : ""}>
                       {aiConfidence}%
                       {aiConfidence < 70 && " (Low)"}
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-background overflow-hidden">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${
                         aiConfidence < 70 ? "bg-amber-500" : getConfidenceBarColor(aiConfidence)
@@ -219,7 +219,7 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
             </div>
 
             {/* Source Credibility */}
-            <div className="p-4 rounded-xl bg-white/50 border border-border/50">
+            <div className="p-4 rounded-xl bg-card/50 border border-border">
               <div className="flex items-center gap-2 mb-3">
                 {getSourceIcon()}
                 <h4 className="font-semibold text-sm">Source Credibility</h4>
@@ -234,11 +234,11 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Score</span>
-                    <span className={sourceScore >= 70 ? "text-green-600 font-medium" : sourceScore >= 50 ? "text-yellow-600" : "text-red-600"}>
+                    <span className={sourceScore >= 70 ? "text-green-600 dark:text-green-400 font-medium" : sourceScore >= 50 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}>
                       {sourceScore}%
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-background overflow-hidden">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${getConfidenceBarColor(sourceScore)}`}
                       style={{ width: `${sourceScore}%` }}
@@ -256,7 +256,7 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
             </div>
 
             {/* Combined Verdict */}
-            <div className="p-4 rounded-xl bg-white/50 border-2 border-primary/30">
+            <div className="p-4 rounded-xl bg-card/50 border-2 border-primary/30">
               <div className="flex items-center gap-2 mb-3">
                 <Scale className="w-5 h-5 text-primary" />
                 <h4 className="font-semibold text-sm">Combined Score</h4>
@@ -272,7 +272,7 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
                     <span>Credibility</span>
                     <span>{hybridScore >= 65 ? "Credible" : hybridScore >= 35 ? "Uncertain" : "Not Credible"}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-background overflow-hidden">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${
                         isUncertain ? "bg-amber-500" : getConfidenceBarColor(hybridScore)
@@ -290,7 +290,7 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
 
           {/* Content Indicators */}
           {result.ai_indicators && (
-            <div className="mb-6 p-4 rounded-xl bg-white/50 border border-border/50">
+            <div className="mb-6 p-4 rounded-xl bg-card/50 border border-border">
               <h4 className="font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 Content Quality Indicators
@@ -299,11 +299,11 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
                 {Object.entries(result.ai_indicators).map(([key, value]) => {
                   const { quality, color } = getIndicatorQuality(key, value);
                   return (
-                    <div key={key} className="text-center p-2 rounded-lg bg-background/50">
+                    <div key={key} className="text-center p-2 rounded-lg bg-muted/50">
                       <div className="flex justify-center mb-1">
                         {getIndicatorIcon(key.includes("sensationalism") || key.includes("emotional") ? 100 - value : value)}
                       </div>
-                      <div className={`text-lg font-bold ${color}`}>
+                      <div className={`text-lg font-bold ${color.replace('text-green-600', 'text-green-600 dark:text-green-400').replace('text-yellow-600', 'text-yellow-600 dark:text-yellow-400').replace('text-red-600', 'text-red-600 dark:text-red-400')}`}>
                         {value}%
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -319,28 +319,28 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
           {/* Red Flags & Positive Signals */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             {result.ai_red_flags && result.ai_red_flags.length > 0 && (
-              <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  <h4 className="font-semibold text-red-800">Red Flags</h4>
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <h4 className="font-semibold text-red-800 dark:text-red-300">Red Flags</h4>
                 </div>
                 <ul className="space-y-1">
                   {result.ai_red_flags.map((flag, index) => (
-                    <li key={index} className="text-sm text-red-700">• {flag}</li>
+                    <li key={index} className="text-sm text-red-700 dark:text-red-400">• {flag}</li>
                   ))}
                 </ul>
               </div>
             )}
 
             {result.ai_positive_signals && result.ai_positive_signals.length > 0 && (
-              <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <h4 className="font-semibold text-green-800">Positive Signals</h4>
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <h4 className="font-semibold text-green-800 dark:text-green-300">Positive Signals</h4>
                 </div>
                 <ul className="space-y-1">
                   {result.ai_positive_signals.map((signal, index) => (
-                    <li key={index} className="text-sm text-green-700">• {signal}</li>
+                    <li key={index} className="text-sm text-green-700 dark:text-green-400">• {signal}</li>
                   ))}
                 </ul>
               </div>
@@ -348,12 +348,12 @@ const AIResultSection = ({ result, onReset }: AIResultSectionProps) => {
           </div>
 
           {/* Recommendation */}
-          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 mb-6">
+          <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 mb-6">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-blue-800 mb-1">Recommendation</h4>
-                <p className="text-sm text-blue-700">{result.recommendation}</p>
+                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Recommendation</h4>
+                <p className="text-sm text-blue-700 dark:text-blue-400">{result.recommendation}</p>
               </div>
             </div>
           </div>
