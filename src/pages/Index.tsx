@@ -2,47 +2,64 @@ import { useState } from "react";
 import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
 import NewsInputSection from "@/components/NewsInputSection";
-import ResultSection from "@/components/ResultSection";
-import UrlResultSection from "@/components/UrlResultSection";
+import AIResultSection from "@/components/AIResultSection";
 import NewsFeed from "@/components/NewsFeed";
 import Footer from "@/components/Footer";
-import { predictImage, predictUrl, type ComprehensiveResponse } from "@/lib/api";
+import { analyzeNews, type AIAnalysisResponse } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-interface ImageAnalysisResult {
-  prediction: "real" | "fake";
-  confidence: number;
-}
-
-type ResultType = "image" | "url" | null;
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [resultType, setResultType] = useState<ResultType>(null);
-  const [imageResult, setImageResult] = useState<ImageAnalysisResult | null>(null);
-  const [urlResult, setUrlResult] = useState<ComprehensiveResponse | null>(null);
+  const [result, setResult] = useState<AIAnalysisResponse | null>(null);
   const { toast } = useToast();
 
   const handleAnalyzeImage = async (file: File) => {
     setIsLoading(true);
-    setImageResult(null);
-    setUrlResult(null);
-    setResultType(null);
+    setResult(null);
 
     try {
-      const response = await predictImage(file);
-      
-      setImageResult({
-        prediction: response.prediction.toLowerCase() as "real" | "fake",
-        confidence: Math.round(response.confidence * 100),
+      // For image analysis, we'll need to extract text first
+      // For now, show a message that image analysis uses the legacy system
+      toast({
+        title: "Image Analysis",
+        description: "Image OCR analysis is being processed. For best results, use URL analysis.",
       });
-      setResultType("image");
+      
+      // TODO: Implement image-to-text extraction and then AI analysis
+      // For now, we'll show a placeholder result
+      setResult({
+        ai_prediction: "UNCERTAIN",
+        ai_confidence: 50,
+        ai_reasoning: "Image analysis requires text extraction. Please use URL analysis for more accurate results.",
+        ai_indicators: {
+          sensationalism_score: 50,
+          source_attribution: 50,
+          logical_consistency: 50,
+          emotional_manipulation: 50,
+          factual_claims_verifiable: 50,
+        },
+        ai_red_flags: [],
+        ai_positive_signals: [],
+        source_domain: null,
+        source_name: "Image Upload",
+        source_score: 50,
+        source_type: "unknown",
+        source_known: false,
+        source_reliable: false,
+        hybrid_score: 50,
+        ai_weight: 0.7,
+        source_weight: 0.3,
+        final_verdict: "UNCERTAIN",
+        final_confidence: 50,
+        is_uncertain: true,
+        recommendation: "For accurate analysis, please provide the news article URL instead of an image.",
+      });
     } catch (error) {
       console.error("Image analysis error:", error);
       toast({
         variant: "destructive",
-        title: "Image Analysis Failed",
-        description: error instanceof Error ? error.message : "Could not analyze the image. Please ensure OCR is available.",
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Could not analyze the image.",
       });
     } finally {
       setIsLoading(false);
@@ -51,20 +68,24 @@ const Index = () => {
 
   const handleAnalyzeUrl = async (url: string) => {
     setIsLoading(true);
-    setImageResult(null);
-    setUrlResult(null);
-    setResultType(null);
+    setResult(null);
 
     try {
-      const response = await predictUrl(url);
-      setUrlResult(response);
-      setResultType("url");
+      // First, we need to fetch the article content from the URL
+      // For now, we'll pass the URL to the AI and let it analyze based on source credibility
+      // In a production app, you'd want to scrape the article content first
+      
+      const response = await analyzeNews(
+        `Please analyze this news article from: ${url}. The URL is from a news source that should be evaluated for credibility.`,
+        url
+      );
+      setResult(response);
     } catch (error) {
       console.error("URL analysis error:", error);
       toast({
         variant: "destructive",
-        title: "URL Analysis Failed",
-        description: error instanceof Error ? error.message : "Could not analyze the URL. Please check if it's a valid news article.",
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Could not analyze the URL. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -72,9 +93,7 @@ const Index = () => {
   };
 
   const handleReset = () => {
-    setImageResult(null);
-    setUrlResult(null);
-    setResultType(null);
+    setResult(null);
   };
 
   return (
@@ -92,12 +111,7 @@ const Index = () => {
                 onAnalyzeUrl={handleAnalyzeUrl}
                 isLoading={isLoading} 
               />
-              {resultType === "image" && (
-                <ResultSection result={imageResult} onReset={handleReset} />
-              )}
-              {resultType === "url" && (
-                <UrlResultSection result={urlResult} onReset={handleReset} />
-              )}
+              <AIResultSection result={result} onReset={handleReset} />
             </div>
             
             {/* News feed on the right - fixed width, 1/4 of container */}

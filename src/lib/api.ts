@@ -1,9 +1,53 @@
 /**
  * API Service for Fake News Detection
- * Handles communication with the FastAPI backend
+ * Uses AI-powered analysis via Lovable Cloud
  */
 
+import { supabase } from "@/integrations/supabase/client";
+
+// Legacy API for backwards compatibility (Python backend)
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001";
+
+// ============== AI Analysis Types ==============
+
+export interface AIIndicators {
+  sensationalism_score: number;
+  source_attribution: number;
+  logical_consistency: number;
+  emotional_manipulation: number;
+  factual_claims_verifiable: number;
+}
+
+export interface AIAnalysisResponse {
+  // AI Analysis
+  ai_prediction: "REAL" | "FAKE" | "UNCERTAIN";
+  ai_confidence: number;
+  ai_reasoning: string;
+  ai_indicators: AIIndicators;
+  ai_red_flags: string[];
+  ai_positive_signals: string[];
+  
+  // Source Information
+  source_domain: string | null;
+  source_name: string;
+  source_score: number;
+  source_type: string;
+  source_known: boolean;
+  source_reliable: boolean;
+  
+  // Hybrid Calculation
+  hybrid_score: number;
+  ai_weight: number;
+  source_weight: number;
+  
+  // Final Result
+  final_verdict: "REAL" | "FAKE" | "LIKELY_REAL" | "LIKELY_FAKE" | "UNCERTAIN";
+  final_confidence: number;
+  is_uncertain: boolean;
+  recommendation: string;
+}
+
+// ============== Legacy Types (for backwards compatibility) ==============
 
 export interface PredictionResponse {
   prediction: "REAL" | "FAKE";
@@ -14,29 +58,20 @@ export interface PredictionResponse {
 }
 
 export interface HybridPredictionResponse {
-  // Final combined prediction
   prediction: "REAL" | "FAKE";
   confidence: number;
   fake_probability: number;
   real_probability: number;
-  
-  // Text-based prediction details
   text_prediction: "REAL" | "FAKE";
   text_confidence: number;
   text_fake_probability: number;
   text_real_probability: number;
-  
-  // Source information
   source_name: string;
   source_score: number;
   source_known: boolean;
   source_type: string;
-  
-  // Weights used
   text_weight: number;
   source_weight: number;
-  
-  // Additional info
   text_length: number;
   adjustment_applied: string;
 }
@@ -83,8 +118,58 @@ export interface ApiError {
   detail: string;
 }
 
+// ============== AI-Powered Analysis (Primary) ==============
+
 /**
- * Check if the API is healthy and model is loaded
+ * Analyze news content using AI (Lovable AI Gateway)
+ * This is the primary analysis method
+ */
+export async function analyzeNews(
+  content: string, 
+  url?: string
+): Promise<AIAnalysisResponse> {
+  const { data, error } = await supabase.functions.invoke("analyze-news", {
+    body: { text: content, url: url || null },
+  });
+
+  if (error) {
+    console.error("AI analysis error:", error);
+    throw new Error(error.message || "AI analysis failed");
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data as AIAnalysisResponse;
+}
+
+/**
+ * Analyze news by URL using AI
+ */
+export async function analyzeNewsUrl(url: string): Promise<AIAnalysisResponse> {
+  // For URL analysis, we'll fetch the content first (could be done in edge function too)
+  // For now, pass the URL and let the edge function handle source credibility
+  const { data, error } = await supabase.functions.invoke("analyze-news", {
+    body: { text: "", url, source: url },
+  });
+
+  if (error) {
+    console.error("AI URL analysis error:", error);
+    throw new Error(error.message || "AI analysis failed");
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data as AIAnalysisResponse;
+}
+
+// ============== Legacy API Functions (Python Backend) ==============
+
+/**
+ * Check if the legacy API is healthy
  */
 export async function checkHealth(): Promise<HealthResponse> {
   const response = await fetch(`${API_BASE_URL}/health`);
@@ -97,14 +182,12 @@ export async function checkHealth(): Promise<HealthResponse> {
 }
 
 /**
- * Predict if news text is real or fake (text-only, no source adjustment)
+ * Predict using legacy ML model (text-only)
  */
 export async function predictText(text: string): Promise<PredictionResponse> {
   const response = await fetch(`${API_BASE_URL}/predict-text`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
 
@@ -117,11 +200,7 @@ export async function predictText(text: string): Promise<PredictionResponse> {
 }
 
 /**
- * Predict if news text is real or fake with source credibility adjustment
- * 
- * @param text - News article text
- * @param source - Source name or domain (optional)
- * @param textWeight - Weight for text-based prediction (0-1), default 0.7
+ * Predict with source using legacy ML model
  */
 export async function predictWithSource(
   text: string, 
@@ -130,9 +209,7 @@ export async function predictWithSource(
 ): Promise<HybridPredictionResponse> {
   const response = await fetch(`${API_BASE_URL}/predict-with-source`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ 
       text, 
       source: source || null,
@@ -149,14 +226,12 @@ export async function predictWithSource(
 }
 
 /**
- * Analyze a news URL for authenticity
+ * Analyze URL using legacy ML model
  */
 export async function predictUrl(url: string): Promise<ComprehensiveResponse> {
   const response = await fetch(`${API_BASE_URL}/predict-url`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   });
 
@@ -169,7 +244,7 @@ export async function predictUrl(url: string): Promise<ComprehensiveResponse> {
 }
 
 /**
- * Check source credibility by domain
+ * Check source credibility
  */
 export async function checkSource(domain: string): Promise<SourceCredibility & { recommendation: string }> {
   const response = await fetch(`${API_BASE_URL}/check-source/${encodeURIComponent(domain)}`);
@@ -183,7 +258,7 @@ export async function checkSource(domain: string): Promise<SourceCredibility & {
 }
 
 /**
- * Predict if news in image is real or fake (using OCR)
+ * Predict from image using legacy ML model (OCR)
  */
 export async function predictImage(file: File): Promise<PredictionResponse> {
   const formData = new FormData();
