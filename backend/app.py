@@ -38,12 +38,12 @@ except ImportError:
     print("⚠️ pytesseract/Pillow not available. Image prediction disabled.")
 
 
-# Global variables for model and vectorizer
+
 model = None
 vectorizer = None
 stop_words = None
 
-# Paths to model artifacts
+
 MODEL_PATH = Path(__file__).parent.parent / "models" / "fake_news_classifier.pkl"
 VECTORIZER_PATH = Path(__file__).parent.parent / "models" / "tfidf_vectorizer.pkl"
 
